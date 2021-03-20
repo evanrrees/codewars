@@ -69,7 +69,7 @@ class Grid(var yMax: Int = 0, var xMax: Int = 0, var yMin: Int = 0, var xMin: In
             var pointer = Pointer()
             commands.forEach { cmd ->
                 pointer = pointer.update(cmd)
-                expand(pointer)
+                grow(pointer)
             }
 //            System.err.println(this)
         }
@@ -102,7 +102,7 @@ class Grid(var yMax: Int = 0, var xMax: Int = 0, var yMin: Int = 0, var xMin: In
     }
 
     /** Expand grid coordinates if [pointer] out of bounds*/
-    private fun expand(pointer: Pointer) {
+    private fun grow(pointer: Pointer) {
         when (pointer.orientation) {
             Orientation.UP -> if (pointer.y > yMax) yMax = pointer.y
             Orientation.RIGHT -> if (pointer.x > xMax) xMax = pointer.x
@@ -113,89 +113,97 @@ class Grid(var yMax: Int = 0, var xMax: Int = 0, var yMin: Int = 0, var xMin: In
 
 }
 
-/** Expand RS1 formatted [code] to linear */
-fun expandRS1(code: String): String = Regex("([FRL])([0-9]+)")
-    .replace(code) { it.groupValues[1].repeat(it.groupValues[2].toIntOrNull()?: 1) }
+/** Holder for [tokenizeRS] component functions
+ *
+ * Stupidly inefficient - the whole program gets expanded to the longest form
+ *
+ * */
+object Tokenizer {
+    class ParseError(message: String): Exception(message)
 
-/** Expand RS2 formatted [code] to RS1 */
-tailrec fun expandRS2(code: String): String {
-    return if (!code.contains(Regex("[()]"))) { code }
-    else {
-        val temp = code.replace(Regex("\\(([FRL0-9]+)\\)([0-9]*)")) {
-            it.groupValues[1].repeat(it.groupValues[2].toIntOrNull()?: 1)
-        }
-        expandRS2(temp)
-    }
-}
+    /** Expand RS1 formatted [code] to RS0 (linear) */
+    private fun expandRS1(code: String): String = Regex("([FRL])([0-9]+)")
+        .replace(code) { it.groupValues[1].repeat(it.groupValues[2].toIntOrNull()?: 1) }
 
-class ParseError(message: String): Exception(message)
-
-fun expandRS3(code: String): String {
-
-    fun checkRecursion(code: String, fDefs: MutableMap<String, String>) {
-        fDefs.forEach { (func1, body1) ->
-            val re1 = Regex("$func1([^0-9]|\$)")
-            // check self-recursion
-            if (body1.contains(re1) && code.contains(re1)) throw ParseError("Self recursion: $func1($body1)")
-            // check mutual-recursion
-            Regex("P[0-9]+").findAll(body1).filter { it.value != func1 }.forEach {
-                val body2 = fDefs[it.value]?: throw ParseError("Undefined: ${it.groupValues[1]}")
-                if (body2.contains(re1)) throw ParseError("Mutual recursion: $func1($body1) and ${it.value}($body2)")
-                fDefs[it.value] = body2.replace(re1, body1)
+    /** Expand RS2 formatted [code] to RS1 */
+    private tailrec fun expandRS2(code: String): String {
+        return if (!code.contains(Regex("[()]"))) { code }
+        else {
+            val temp = code.replace(Regex("\\(([FRL0-9]+)\\)([0-9]*)")) {
+                it.groupValues[1].repeat(it.groupValues[2].toIntOrNull()?: 1)
             }
+            expandRS2(temp)
         }
     }
 
-    fun parseFunctionDefs(code1: String, fDefs: MutableMap<String, String>): String {
-        val code2 = Regex("(p[0-9]+)([FLRP()0-9]+)q")
-            .replace(code1) {
-                val fName = it.groupValues[1].toUpperCase()
-                if (fDefs.containsKey(fName)) {
-                    throw ParseError("Already defined: $fName")
+    /** Expand RS3 formatted [code] to RS2 */
+    private fun expandRS3(code: String): String {
+
+        fun checkRecursion(code: String, fDefs: MutableMap<String, String>) {
+            fDefs.forEach { (func1, body1) ->
+                val re1 = Regex("$func1([^0-9]|\$)")
+                // check self-recursion
+                if (body1.contains(re1) && code.contains(re1)) throw ParseError("Self recursion: $func1($body1)")
+                // check mutual-recursion
+                Regex("P[0-9]+").findAll(body1).filter { it.value != func1 }.forEach {
+                    val body2 = fDefs[it.value]?: throw ParseError("Undefined: ${it.groupValues[1]}")
+                    if (body2.contains(re1)) throw ParseError("Mutual recursion: $func1($body1) and ${it.value}($body2)")
+                    fDefs[it.value] = body2.replace(re1, body1)
                 }
-                fDefs[fName] = it.groupValues[2]
-                ""
-            }
-        checkRecursion(code2, fDefs)
-        return code2
-    }
-
-    fun insertFunctionDefs(code: String, fDefs: MutableMap<String, String>): String {
-        tailrec fun insertFunctionDefsHelper(code2: String): String {
-            return if (!code2.contains(Regex("P[0-9]+"))) {
-                code2
-            } else {
-                val code3 = code2.replace(Regex("(P[0-9]+)")) {
-                    fDefs[it.groupValues[1]] ?: throw ParseError("Undefined: ${it.groupValues[1]}")
-                }
-                insertFunctionDefsHelper(code3)
             }
         }
-        return insertFunctionDefsHelper(code)
+
+        fun parseFunctionDefs(code1: String, fDefs: MutableMap<String, String>): String {
+            val code2 = Regex("(p[0-9]+)([FLRP()0-9]+)q")
+                .replace(code1) {
+                    val fName = it.groupValues[1].toUpperCase()
+                    if (fDefs.containsKey(fName)) {
+                        throw ParseError("Already defined: $fName")
+                    }
+                    fDefs[fName] = it.groupValues[2]
+                    ""
+                }
+            checkRecursion(code2, fDefs)
+            return code2
+        }
+
+        fun insertFunctionDefs(code: String, fDefs: MutableMap<String, String>): String {
+            tailrec fun insertFunctionDefsHelper(code2: String): String {
+                return if (!code2.contains(Regex("P[0-9]+"))) {
+                    code2
+                } else {
+                    val code3 = code2.replace(Regex("(P[0-9]+)")) {
+                        fDefs[it.groupValues[1]] ?: throw ParseError("Undefined: ${it.groupValues[1]}")
+                    }
+                    insertFunctionDefsHelper(code3)
+                }
+            }
+            return insertFunctionDefsHelper(code)
+        }
+
+        val functionDefs = mutableMapOf<String, String>()
+
+        return insertFunctionDefs(parseFunctionDefs(code, functionDefs), functionDefs)
     }
 
-    val functionDefs = mutableMapOf<String, String>()
+    /** Tokenize RS1 formatted [code] to list of [Command]*/
+    private fun tokenizeRS0(code: String): List<Command> = Regex("F+|R+|L+")
+        .findAll(code)
+        .map { Command(Instruction.valueOf("${it.value[0]}"), it.value.length) }
+        .toList()
 
-    return insertFunctionDefs(parseFunctionDefs(code, functionDefs), functionDefs)
+    /** Tokenize RS1-RS3 formatted [code] to list of [Command] */
+    fun tokenizeRS(code: String): List<Command> =
+        code.let { if (it.contains(Regex("[Ppq]"))) expandRS3(it) else it }
+            .let { if (it.contains(Regex("[()]"))) expandRS2(it) else it }
+            .let { expandRS1(it) }
+            .let { tokenizeRS0(it) }
+
 }
-
-/** Tokenize RS1 formatted [code] to list of [Command]*/
-fun tokenizeRS1(code: String): List<Command> = Regex("F+|R+|L+")
-    .findAll(code)
-    .map { Command(Instruction.valueOf("${it.value[0]}"), it.value.length) }
-    .toList()
-
-/** Tokenize RS1-RS3 formatted [code] to list of [Command] */
-fun tokenizeRS(code: String): List<Command> =
-    code.let { if (it.contains(Regex("[Ppq]"))) expandRS3(it) else it }
-        .let { if (it.contains(Regex("[()]"))) expandRS2(it) else it }
-        .let { expandRS1(it) }
-        .let { tokenizeRS1(it) }
-
 
 /** Parse [code] and return [String] representation of path along [Grid] */
 fun execute(code: String): String {
-    val commands = tokenizeRS(code)
+    val commands = Tokenizer.tokenizeRS(code)
     val grid = Grid.sketch(commands)
     return grid.draw(commands)
 }
