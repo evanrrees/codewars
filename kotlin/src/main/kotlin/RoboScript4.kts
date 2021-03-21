@@ -169,14 +169,11 @@ object Tokenizer {
 
         fun insertFunctionDefs(code: String, fDefs: MutableMap<String, String>): String {
             tailrec fun insertFunctionDefsHelper(code2: String): String {
-                return if (!code2.contains(Regex("P[0-9]+"))) {
-                    code2
-                } else {
-                    val code3 = code2.replace(Regex("(P[0-9]+)")) {
-                        fDefs[it.groupValues[1]] ?: throw ParseError("Undefined: ${it.groupValues[1]}")
-                    }
-                    insertFunctionDefsHelper(code3)
+                val code3 = code2.replace(Regex("(P[0-9]+)")) {
+                    fDefs[it.groupValues[1]] ?: throw ParseError("Undefined: ${it.groupValues[1]}")
                 }
+                return if (code2 == code3) code2
+                else insertFunctionDefsHelper(code3)
             }
             return insertFunctionDefsHelper(code)
         }
