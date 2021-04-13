@@ -10,8 +10,22 @@ repositories {
     mavenCentral()
 }
 
+sourceSets {
+    main {
+        java.srcDirs("src/main/java", "src/main/kotlin")
+    }
+    test {
+        java.srcDirs("src/test/java", "src/test/kotlin")
+    }
+}
+
 dependencies {
     implementation(kotlin("stdlib"))
-    testCompileOnly("junit", "junit", "4.12")
     implementation(kotlin("script-runtime"))
+    testImplementation("org.junit.jupiter:junit-jupiter-api:5.7.1")
+    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine")
+}
+
+tasks.test {
+    useJUnitPlatform()
 }
