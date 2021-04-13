@@ -67,7 +67,7 @@ class Grid(var n: Int = 0, var e: Int = 0, var s: Int = 0, var w: Int = 0) {
             var pointer = Pointer()
             commands.forEach { cmd ->
                 pointer = pointer.update(cmd)
-                expand(pointer)
+                this.expand(pointer)
             }
 //            System.err.println(this)
         }
