@@ -6,4 +6,5 @@ fun pascalFractionsRow(n: Int, fraction: Boolean = true): Sequence<Fraction> =
 
 fun pascalFractionsDiag(n: Int): Sequence<Pair<Int, Int>> =
     generateSequence(n + 1 to 1) { (a, b) -> a + 1 to b + 1 }.take(n)
+
 fun pascalRow(n: Int, k: Int) = pascalFractionsRow(n).take(minOf(k, n - k)).fold(1) { m, (a, b) -> m * a / b }
