@@ -1,3 +1,7 @@
+package utils
+
+import Fraction
+
 fun pascalFractionsRow(n: Int): Sequence<Pair<Int, Int>> =
     generateSequence(n to 1) { (a, b) -> a - 1 to b + 1 }.take(n)
 
