@@ -2,7 +2,12 @@
 <project version="4">
   <component name="CompilerConfiguration">
     <bytecodeTargetLevel>
+      <module name="codewars" target="11" />
+      <module name="codewars.main" target="11" />
+      <module name="codewars.test" target="11" />
       <module name="org.example.kotlin" target="11" />
+      <module name="org.example.kotlin.main" target="11" />
+      <module name="org.example.kotlin.test" target="11" />
     </bytecodeTargetLevel>
   </component>
 </project>
