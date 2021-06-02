@@ -36,22 +36,3 @@ fun c(k: Long): Int = when (k) {
         else values.map { it * 3 / 2 + 1 }.reduce(Int::times)
     }
 }
-
-fun pascalFractionsRow(n: Int) = generateSequence(n to 1) { (a, b) -> a - 1 to b + 1 }.take(n)
-fun pascalRow(n: Int): List<Int> {
-    var m = 1
-    val result = mutableListOf(1)
-    pascalFractionsRow(n).take(n / 2).forEach {
-        m = m * it.first / it.second
-        result += m
-    }
-    return result
-}
-// this works!!!! can be cleaned up
-fun sol(x: Long): Int {
-    return factorize(x).groupingBy { it }.eachCount().map { (_, v)-> pascalRow(v * 3 / 2).size * 2 }.reduce(Int::times)
-}
-
-
-
-fun formatFactors(f: List<Long>) = f.groupingBy { it }.eachCount().map { (k, v) -> "$k^$v" }

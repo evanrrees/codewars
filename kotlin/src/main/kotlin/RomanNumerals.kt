@@ -25,7 +25,6 @@ object RomanNumerals {
         val five = "VLD"
         val digits = "$n"
         val builder = StringBuilder()
-        digits
         for (i in digits.indices) {
             val c = digits[digits.length - i - 1]
             builder.insert(0,

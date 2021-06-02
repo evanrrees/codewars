@@ -2,14 +2,14 @@ package utils
 
 import java.math.BigInteger
 
-fun Long.choose(other: Long): Long {
-    if (other == 0L || other == this) return 1
-    var n = this
-    for (k in 1L..other) {
-        n = n * (n + 1 - k) / k
-    }
-    return n
-}
+//fun Long.choose(other: Long): Long {
+//    if (other == 0L || other == this) return 1
+//    var n = this
+//    for (k in 1L..other) {
+//        n = n * (n + 1 - k) / k
+//    }
+//    return n
+//}
 
 fun chooseForBig(n: Long, k: Int): BigInteger {
     val bigK = BigInteger("$k")
